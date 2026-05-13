@@ -12,7 +12,6 @@ class Poster {
 
     try {
       if (mode === 'button') {
-        // Button Mode
         const caption = post.title;
         const keyboard = [
           [{ text: '📥 DOWNLOAD', url: post.link }],
@@ -30,29 +29,24 @@ class Poster {
           });
         }
       } else {
-        // Quote Mode
-        const caption = `${post.title}\n\nLink -\n>${post.link}\n\n👉 Download Tutorial 👈\n>${tutorialLink}`;
+        const caption = `${post.title}\n\nLink -\n${post.link}\n\n👉 Download Tutorial 👈\n${tutorialLink}`;
 
         if (showImage === 'true' && post.imageUrl) {
           await this.bot.sendPhoto(channelId, post.imageUrl, {
-            caption: caption,
-            parse_mode: 'Markdown'
+            caption: caption
           });
         } else {
           await this.bot.sendMessage(channelId, caption, {
-            parse_mode: 'Markdown',
             disable_web_page_preview: true
           });
         }
       }
 
-      // Log the post
       this.settings.addPostLog(post.blogId, post.title, post.link, status);
       console.log(`✅ Posted: ${post.title}`);
-      
       return true;
     } catch (error) {
-      console.error(`❌ Failed to post: ${post.title}`, error.message);
+      console.error(`❌ Failed: ${post.title}`, error.message);
       return false;
     }
   }
