@@ -1,9 +1,16 @@
 const Database = require('better-sqlite3');
 const path = require('path');
+const fs = require('fs');
 
 class Settings {
   constructor() {
-    this.db = new Database(path.join(__dirname, '..', 'data', 'settings.db'));
+    const dataDir = path.join(__dirname, '..', 'data');
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
+    this.db = new Database(path.join(dataDir, 'settings.db'));
+    this.db.pragma('journal_mode = WAL');
     this.init();
   }
 
@@ -34,7 +41,6 @@ class Settings {
       );
     `);
 
-    // Set defaults
     const defaults = {
       mode: 'quote',
       show_image: 'true',
@@ -69,13 +75,20 @@ class Settings {
   }
 
   isPosted(blogId) {
+    if (!blogId) return false;
     const row = this.db.prepare('SELECT id FROM post_log WHERE blog_id = ?').get(blogId);
     return !!row;
   }
 
   addPostLog(blogId, title, link, status) {
-    this.db.prepare('INSERT OR IGNORE INTO post_log (blog_id, title, link, status) VALUES (?, ?, ?, ?)')
-      .run(blogId, title, link, status);
+    if (!blogId) return;
+    try {
+      this.db.prepare('INSERT OR IGNORE INTO post_log (blog_id, title, link, status) VALUES (?, ?, ?, ?)')
+        .run(blogId, title, link, status);
+      console.log(`📝 Logged: ${title}`);
+    } catch (e) {
+      console.error('Log error:', e.message);
+    }
   }
 
   getPendingPosts() {
@@ -83,8 +96,9 @@ class Settings {
   }
 
   addPendingPost(post) {
+    if (!post.blogId) return;
     this.db.prepare('INSERT OR IGNORE INTO pending_posts (blog_id, title, link, image_url, excerpt) VALUES (?, ?, ?, ?, ?)')
-      .run(post.blogId, post.title, post.link, post.imageUrl, post.excerpt);
+      .run(post.blogId, post.title, post.link, post.imageUrl || null, post.excerpt || '');
   }
 
   removePendingPost(blogId) {
